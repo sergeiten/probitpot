@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"probitpot"
+	"time"
 
 	"github.com/jessevdk/go-flags"
 )
@@ -25,4 +26,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to run: %v", err)
 	}
+
+	time.Sleep(10 * time.Second)
+	bot.Stop()
 }
