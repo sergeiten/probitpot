@@ -19,6 +19,7 @@ type Opts struct {
 	MarketID        string  `long:"market_id" description:"Market ID"`
 	MinPrice        float64 `long:"min_price" description:"Minimal price that can be generated"`
 	MaxPrice        float64 `long:"max_price" description:"Maximal price that can be generated"`
+	MinQuantity     int     `long:"min_quantity" description:"Minimal quantity of tokens that can be generated"`
 	MaxQuantity     int     `long:"max_quantity" description:"Maximal quantity of tokens that can be generated"`
 	Transactions    int     `long:"transactions" description:"Number of transactions that will be generated"`
 	Delay           int     `long:"delay" description:"Delay between transactions (in seconds)"`
@@ -51,8 +52,7 @@ func (b *Bot) Run() error {
 		}
 
 		limitPrice := round(randF(b.opts.MinPrice, b.opts.MaxPrice), 1)
-		minQuantity := int(probit.MinTotalPrice / limitPrice)
-		quantity := strconv.Itoa(randI(minQuantity, b.opts.MaxQuantity))
+		quantity := strconv.Itoa(randI(b.opts.MinQuantity, b.opts.MaxQuantity))
 
 		newSellOrder, err := b.client.Sell(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity)
 		if err != nil {
