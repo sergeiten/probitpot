@@ -6,7 +6,6 @@ import (
 	"math"
 	"math/rand"
 	"probitpot/probit"
-	"strconv"
 	"strings"
 	"time"
 
@@ -24,7 +23,8 @@ type Opts struct {
 	MinQuantity     int     `long:"min_quantity" description:"Minimal quantity of tokens that can be generated"`
 	MaxQuantity     int     `long:"max_quantity" description:"Maximal quantity of tokens that can be generated"`
 	Transactions    int     `long:"transactions" description:"Number of transactions that will be generated"`
-	Delay           int     `long:"delay" description:"Delay between transactions (in seconds)"`
+	SellDelay       int     `long:"sell_delay" description:"Delay after sell action (in milliseconds)"`
+	BuyDelay        int     `long:"buy_delay" description:"Delay after buy action (in milliseconds)"`
 }
 
 type Bot struct {
@@ -78,25 +78,25 @@ func (b *Bot) Run() error {
 					close(b.AllDone)
 					return
 				}
-				limitPrice := round(randF(b.opts.MinPrice, b.opts.MaxPrice), 1)
-				quantity := strconv.Itoa(randI(b.opts.MinQuantity, b.opts.MaxQuantity))
+				//limitPrice := round(randF(b.opts.MinPrice, b.opts.MaxPrice), 1)
+				//quantity := strconv.Itoa(randI(b.opts.MinQuantity, b.opts.MaxQuantity))
+				//
+				//newSellOrder, err := b.client.Sell(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity)
+				//if err != nil {
+				//	log.Fatalf("failed to sell: %v", err)
+				//}
+				//printOrderEvent(newSellOrder)
+				b.sleep(b.opts.SellDelay)
 
-				newSellOrder, err := b.client.Sell(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity)
-				if err != nil {
-					log.Fatalf("failed to sell: %v", err)
-				}
-				printOrderEvent(newSellOrder)
-				b.sleep()
-
-				newBuyOrder, err := b.client.Buy(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity, newSellOrder.Data.ClientOrderID)
-				if err != nil {
-					log.Fatalf("failed to buy: %v", err)
-				}
-				printOrderEvent(newBuyOrder)
+				//newBuyOrder, err := b.client.Buy(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity, newSellOrder.Data.ClientOrderID)
+				//if err != nil {
+				//	log.Fatalf("failed to buy: %v", err)
+				//}
+				//printOrderEvent(newBuyOrder)
 
 				// don't sleep for last order
 				if i != b.opts.Transactions {
-					b.sleep()
+					b.sleep(b.opts.BuyDelay)
 				}
 				i++
 			}
@@ -132,10 +132,10 @@ func (b *Bot) Stop() {
 	close(b.runDone)
 }
 
-func (b *Bot) sleep() {
-	delay := randI(1, b.opts.Delay)
-	printDelayEvent(delay)
-	time.Sleep(time.Duration(delay) * time.Second)
+func (b *Bot) sleep(delay int) {
+	randDelay := randI(1, delay)
+	printDelayEvent(randDelay)
+	time.Sleep(time.Duration(randDelay) * time.Millisecond)
 }
 
 func printOrderEvent(order *probit.NewOrderResponse) {
@@ -155,7 +155,7 @@ func printOrderEvent(order *probit.NewOrderResponse) {
 }
 
 func printDelayEvent(delay int) {
-	log.Printf("Sleep: %d seconds\n", delay)
+	log.Printf("Sleep: %.2f seconds\n", float64(delay)/1000)
 }
 
 func randF(min, max float64) float64 {
