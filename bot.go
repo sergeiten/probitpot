@@ -6,11 +6,14 @@ import (
 	"math"
 	"math/rand"
 	"probitpot/probit"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/fatih/color"
 )
+
+const tokenMargin = 10
 
 type Opts struct {
 	ClientID        string  `long:"client_id" description:"Client ID"`
@@ -25,11 +28,13 @@ type Opts struct {
 }
 
 type Bot struct {
-	opts       Opts
-	client     *probit.Probit
-	ticker     *time.Ticker
-	tickerDone chan bool
-	runDone    chan bool
+	opts             Opts
+	client           *probit.Probit
+	ticker           *time.Ticker
+	lastTokenRefresh time.Time
+	tickerDone       chan struct{}
+	runDone          chan struct{}
+	AllDone          chan struct{}
 }
 
 func NewBot(opts Opts) (*Bot, error) {
@@ -44,8 +49,9 @@ func NewBot(opts Opts) (*Bot, error) {
 		opts:       opts,
 		client:     client,
 		ticker:     time.NewTicker(1 * time.Second),
-		tickerDone: make(chan bool),
-		runDone:    make(chan bool),
+		tickerDone: make(chan struct{}),
+		runDone:    make(chan struct{}),
+		AllDone:    make(chan struct{}),
 	}
 
 	go b.tick()
@@ -59,33 +65,36 @@ func (b *Bot) Run() error {
 		return fmt.Errorf("failed to get token: %v", err)
 	}
 
+	b.lastTokenRefresh = time.Now()
+
 	go func() {
 		i := 1
 		for {
+			fmt.Println("TRANSACTION: ", i)
 			select {
 			case <-b.runDone:
 				return
 			default:
 				if i > b.opts.Transactions {
+					fmt.Println("DONE ALL TRANSACTIONS")
+					close(b.AllDone)
 					return
 				}
-				//limitPrice := round(randF(b.opts.MinPrice, b.opts.MaxPrice), 1)
-				//quantity := strconv.Itoa(randI(b.opts.MinQuantity, b.opts.MaxQuantity))
+				limitPrice := round(randF(b.opts.MinPrice, b.opts.MaxPrice), 1)
+				quantity := strconv.Itoa(randI(b.opts.MinQuantity, b.opts.MaxQuantity))
 
-				//newSellOrder, err := b.client.Sell(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity)
-				//if err != nil {
-				//	log.Fatalf("failed to sell: %v", err)
-				//}
-				//printOrderEvent(newSellOrder)
-				fmt.Println("<--- SELL")
+				newSellOrder, err := b.client.Sell(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity)
+				if err != nil {
+					log.Fatalf("failed to sell: %v", err)
+				}
+				printOrderEvent(newSellOrder)
 				b.sleep()
 
-				//newBuyOrder, err := b.client.Buy(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity, newSellOrder.Data.ClientOrderID)
-				//if err != nil {
-				//	log.Fatalf("failed to buy: %v", err)
-				//}
-				//printOrderEvent(newBuyOrder)
-				fmt.Println("---> BUY")
+				newBuyOrder, err := b.client.Buy(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity, newSellOrder.Data.ClientOrderID)
+				if err != nil {
+					log.Fatalf("failed to buy: %v", err)
+				}
+				printOrderEvent(newBuyOrder)
 
 				// don't sleep for last order
 				if i != b.opts.Transactions {
@@ -105,16 +114,24 @@ func (b *Bot) tick() {
 		case <-b.tickerDone:
 			return
 		case t := <-b.ticker.C:
-			fmt.Println("Tick at: ", t)
+			diff := t.Unix() - b.lastTokenRefresh.Unix()
+
+			if diff >= int64(b.client.ExpiredIn)-tokenMargin {
+				err := b.client.Token()
+				if err != nil {
+					log.Fatalf("failed to refresh token: %v", err)
+				}
+
+				b.lastTokenRefresh = time.Now()
+			}
 		}
 	}
 }
 
 func (b *Bot) Stop() {
-	fmt.Println("STOP")
 	b.ticker.Stop()
-	b.tickerDone <- true
-	b.runDone <- true
+	close(b.tickerDone)
+	close(b.runDone)
 }
 
 func (b *Bot) sleep() {
