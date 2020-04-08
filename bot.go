@@ -70,13 +70,11 @@ func (b *Bot) Run() error {
 	go func() {
 		i := 1
 		for {
-			fmt.Println("TRANSACTION: ", i)
 			select {
 			case <-b.runDone:
 				return
 			default:
 				if i > b.opts.Transactions {
-					fmt.Println("DONE ALL TRANSACTIONS")
 					close(b.AllDone)
 					return
 				}
