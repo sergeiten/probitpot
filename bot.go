@@ -20,8 +20,8 @@ type Opts struct {
 	MarketID        string  `long:"market_id" description:"Market ID"`
 	MinPrice        float64 `long:"min_price" description:"Minimal price that can be generated"`
 	MaxPrice        float64 `long:"max_price" description:"Maximal price that can be generated"`
-	MinQuantity     int     `long:"min_quantity" description:"Minimal quantity of tokens that can be generated"`
-	MaxQuantity     int     `long:"max_quantity" description:"Maximal quantity of tokens that can be generated"`
+	MinQuantity     float64 `long:"min_quantity" description:"Minimal quantity of tokens that can be generated"`
+	MaxQuantity     float64 `long:"max_quantity" description:"Maximal quantity of tokens that can be generated"`
 	Transactions    int     `long:"transactions" description:"Number of transactions that will be generated"`
 	SellDelay       int     `long:"sell_delay" description:"Delay after sell action (in milliseconds)"`
 	BuyDelay        int     `long:"buy_delay" description:"Delay after buy action (in milliseconds)"`
@@ -78,21 +78,21 @@ func (b *Bot) Run() error {
 					close(b.AllDone)
 					return
 				}
-				//limitPrice := round(randF(b.opts.MinPrice, b.opts.MaxPrice), 1)
-				//quantity := strconv.Itoa(randI(b.opts.MinQuantity, b.opts.MaxQuantity))
-				//
-				//newSellOrder, err := b.client.Sell(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity)
-				//if err != nil {
-				//	log.Fatalf("failed to sell: %v", err)
-				//}
-				//printOrderEvent(newSellOrder)
+				limitPrice := round(randF(b.opts.MinPrice, b.opts.MaxPrice), 1)
+				quantity := fmt.Sprintf("%.3f", randF(b.opts.MinQuantity, b.opts.MaxQuantity))
+
+				newSellOrder, err := b.client.Sell(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity)
+				if err != nil {
+					log.Fatalf("failed to sell: %v", err)
+				}
+				printOrderEvent(newSellOrder)
 				b.sleep(b.opts.SellDelay)
 
-				//newBuyOrder, err := b.client.Buy(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity, newSellOrder.Data.ClientOrderID)
-				//if err != nil {
-				//	log.Fatalf("failed to buy: %v", err)
-				//}
-				//printOrderEvent(newBuyOrder)
+				newBuyOrder, err := b.client.Buy(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity, newSellOrder.Data.ClientOrderID)
+				if err != nil {
+					log.Fatalf("failed to buy: %v", err)
+				}
+				printOrderEvent(newBuyOrder)
 
 				// don't sleep for last order
 				if i != b.opts.Transactions {
