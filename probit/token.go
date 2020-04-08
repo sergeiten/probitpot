@@ -39,6 +39,7 @@ func (p *Probit) Token() error {
 	}
 
 	p.accessToken = tokenResponse.AccessToken
+	p.ExpiredIn = tokenResponse.ExpiresIn
 
 	return nil
 }

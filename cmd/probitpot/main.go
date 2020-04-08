@@ -25,4 +25,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to run: %v", err)
 	}
+
+	<-bot.AllDone
+
+	bot.Stop()
 }

@@ -25,6 +25,7 @@ type Probit struct {
 	clientSecretKey string
 	basicToken      string
 	accessToken     string
+	ExpiredIn       int
 }
 
 func NewProbit(clientID, clientSecretKey string) (*Probit, error) {
