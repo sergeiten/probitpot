@@ -26,6 +26,7 @@ func main() {
 		log.Fatalf("failed to run: %v", err)
 	}
 
+	// add new commment
 	<-bot.AllDone
 
 	bot.Stop()
