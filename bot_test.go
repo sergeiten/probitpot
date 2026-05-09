@@ -46,11 +46,16 @@ func TestRound(t *testing.T) {
 			9.338,
 			3,
 		},
+		{
+			0.00489,
+			0.00489,
+			4,
+		},
 	}
 
 	for _, test := range tests {
 		r := round(test.number, test.p)
 
-		assert.Equal(t, r, test.expected)
+		assert.Equal(t, test.expected, r)
 	}
 }

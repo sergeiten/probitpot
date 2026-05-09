@@ -78,17 +78,17 @@ func (b *Bot) Run() error {
 					close(b.AllDone)
 					return
 				}
-				limitPrice := round(randF(b.opts.MinPrice, b.opts.MaxPrice), 1)
-				quantity := fmt.Sprintf("%.3f", randF(b.opts.MinQuantity, b.opts.MaxQuantity))
+				limitPrice := fmt.Sprintf("%f", randF(b.opts.MinPrice, b.opts.MaxPrice))
+				quantity := fmt.Sprintf("%f", randF(b.opts.MinQuantity, b.opts.MaxQuantity))
 
-				newSellOrder, err := b.client.Sell(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity)
+				newSellOrder, err := b.client.Sell(b.opts.MarketID, probit.TypeLimit, limitPrice, quantity)
 				if err != nil {
 					log.Fatalf("failed to sell: %v", err)
 				}
 				printOrderEvent(newSellOrder)
 				b.sleep(b.opts.SellDelay)
 
-				newBuyOrder, err := b.client.Buy(b.opts.MarketID, probit.TypeLimit, fmt.Sprintf("%.1f", limitPrice), quantity, newSellOrder.Data.ClientOrderID)
+				newBuyOrder, err := b.client.Buy(b.opts.MarketID, probit.TypeLimit, limitPrice, quantity, newSellOrder.Data.ClientOrderID)
 				if err != nil {
 					log.Fatalf("failed to buy: %v", err)
 				}

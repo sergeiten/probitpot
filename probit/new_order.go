@@ -101,7 +101,7 @@ func (p *Probit) newOrderDoRequest(params NewOrderParams) (*NewOrderResponse, er
 
 		_ = json.NewDecoder(resp.Body).Decode(&respError)
 
-		return nil, errors.New(fmt.Sprintf("response status code: %d, error code: %s, request body: %s", resp.StatusCode, respError.ErrorCode, requestBody))
+		return nil, errors.New(fmt.Sprintf("response status code: %d, error code: %s, request body: %s, response error: %v", resp.StatusCode, respError.ErrorCode, requestBody, respError))
 	}
 
 	var newOrderResponse NewOrderResponse
